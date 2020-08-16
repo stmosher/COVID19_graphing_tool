@@ -9,12 +9,15 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 
-def get_covid_data_filenames_and_dates(repo_path: str, start_date: str) -> tuple:
+def get_covid_data_filenames_and_dates(repo_path: str, start_date: str, end_date: str) -> tuple:
     path = os.path.join(repo_path, 'COVID-19/csse_covid_19_data/csse_covid_19_daily_reports')
     fn = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) if '.csv' in f]
     fn.sort()
+    if end_date != 'latest':
+        end_index = fn.index(end_date + '.csv') + 1
+        fn = fn[:end_index]
     index = fn.index(start_date + '.csv')
-    fn1 = fn[index:]
+    fn1 = fn[index - 1:]
     d1 = [z[0] for z in [x.split('.') for x in fn1]]
     d = [datetime.strptime(dt, '%m-%d-%Y') for dt in d1]
     f_p = [os.path.join(path, f) for f in fn1]
@@ -103,16 +106,24 @@ if __name__ == '__main__':
     """
     Examples:
     python JHU_COVID_parser.py
-    python JHU_COVID_parser.py -d=04-10-2020
-    python JHU_COVID_parser.py -d=04-01-2020 -f=Confirmed -c=US -s=Florida -co=Pasco -r=/Users/stmosher/PycharmProjects/
-    python JHU_COVID_parser.py -d=04-01-2020 -f=Deaths -c=US -s=Florida -co=Pasco
+    python JHU_COVID_parser.py -sd=04-10-2020
+    python JHU_COVID_parser.py -sd=06-01-2020 -f=Confirmed -c=US -s=Florida -co=Pasco -r=/Users/stmosher/PycharmProjects/
+    python JHU_COVID_parser.py -sd=06-01-2020 -f=Deaths -c=US -s=Florida -co=Pasco -r=/Users/stmosher/PycharmProjects/
+    python JHU_COVID_parser.py -sd=06-01-2020 -f=Deaths -c=US -s=Florida
+    python JHU_COVID_parser.py -sd=06-01-2020 -f=Confirmed -c=US -s=Florida
+    python JHU_COVID_parser.py -sd=06-01-2020 -ed=07-01-2020 -f=Deaths -c=US -s=Florida
     """
     parser = argparse.ArgumentParser(
         description='Build a custom COVID-19 graph based on your parameters.')
-    parser.add_argument('--start_date', '-d',
+    parser.add_argument('--start_date', '-sd',
                         action='store',
                         default='03-22-2020',
-                        help=('Date using format MM-DD-YYYY'))
+                        help=('Start Date using format MM-DD-YYYY'))
+
+    parser.add_argument('--end_date', '-ed',
+                        action='store',
+                        default='latest',
+                        help=('End Date using format MM-DD-YYYY'))
 
     parser.add_argument('--filter_column', '-f',
                         action='store',
@@ -151,18 +162,20 @@ if __name__ == '__main__':
     parser.add_argument('--repo_path', '-r',
                         action='store',
                         default='/Users/stmosher/PycharmProjects/',
-                        help=("Add path to the previous cloned https://github.com/CSSEGISandData/COVID-19. Example '/Users/stmosher/PycharmProjects/'"))
+                        help=(
+                            "Add path to the previous cloned https://github.com/CSSEGISandData/COVID-19. Example '/Users/stmosher/PycharmProjects/'"))
 
     args = parser.parse_args()
 
     location_filter_covid = dict(country=args.country, state=args.state, county=args.county)
 
     files, dates = get_covid_data_filenames_and_dates(repo_path=args.repo_path,
-                                                      start_date=args.start_date)
+                                                      start_date=args.start_date,
+                                                      end_date=args.end_date)
     df_covid_list = generate_dataframes(filenames=files)
     df_filtered_covid_list = filter_covid_dataframes(dataframes=df_covid_list, filter_covid=location_filter_covid)
     plot_data = get_data(column_name=args.filter_column, dataframes=df_filtered_covid_list)
     plot_dates = get_dates(dates)
-    generate_and_save_chart(x=plot_dates, y=plot_data, y_limit=args.y_limit, y_label=args.y_label,
+    generate_and_save_chart(x=plot_dates[1:], y=plot_data[1:], y_limit=int(args.y_limit), y_label=args.y_label,
                             column_name=args.filter_column,
                             location=location_filter_covid)
