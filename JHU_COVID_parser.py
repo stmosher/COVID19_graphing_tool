@@ -148,12 +148,12 @@ if __name__ == '__main__':
     parser.add_argument('--graph_title', '-g',
                         action='store',
                         default='',
-                        help=('Use to give graph a customer name.'))
+                        help=('Use to give graph a custom name.'))
 
     parser.add_argument('--y_label', '-y',
                         action='store',
                         default='',
-                        help=('Use a customer y label'))
+                        help=('Use a custom y label'))
 
     parser.add_argument('--y_limit', '-yl',
                         action='store',
